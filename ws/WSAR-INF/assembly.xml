@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+     xmlns="http://www.springframework.org/schema/beans"
+     xmlns:beans="http://www.springframework.org/schema/beans"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:cc="http://www.capeclear.com/assembly/10"
+     xmlns:cloud="urn:com.workday/esb/cloud/10.0"
+     xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
+     xmlns:pi="urn:com.workday/picof"
+     xmlns:wd="urn:com.workday/bsvc"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+ 
+	<cc:assembly id="WorkdayAssembly" version="2019.35">
+        <cc:workday-in id="StartHere" routes-to="WorkdayOutRest">
+            <cc:integration-system name="MyHelloRaaS">
+        <cloud:delivery-service name="HelloRaaSDS"/>
+        <cloud:report-service name="MyHelloRaaS_RS">
+          <cloud:report-alias description="WICT Active Employee Details" name="WICTActiveEmployeeDetailsAlias">
+            <cloud:report-reference description="WICT Active Employee Details" type="WID">56517111231801b4d587e336dd01f50c</cloud:report-reference>
+          </cloud:report-alias>
+        </cloud:report-service>
+      </cc:integration-system>
+        </cc:workday-in>
+        <cc:workday-out-rest id="WorkdayOutRest" routes-response-to="AsyncMediation" extra-path="@{intsys.reportService.getExtrapath('WICTActiveEmployeeDetailsAlias')}"/>
+        <cc:async-mediation id="AsyncMediation" routes-to="PutIntegrationMessage">
+            <cc:steps>
+                <cc:log id="Log">
+                    <cc:log-message>
+                        <cc:message-content/>
+                    </cc:log-message>
+                </cc:log>
+                <cc:xslt-plus id="XsltPlus" url="EmployeeReport.xsl"/>
+                <cc:xml-to-csv id="XmlToCsv" writeHeaderLine="true"/>
+                <cc:log id="Log0">
+                    <cc:log-message>
+                        <cc:message-content/>
+                    </cc:log-message>
+                </cc:log>
+                <cc:store id="Store" output="variable" output-variable="vStoredReportMeta" createDocumentReference="false" title="AlwalPutta_MyRaaSOutputFile.txt"/>
+            </cc:steps>
+        </cc:async-mediation>
+        <cc:local-out id="PutIntegrationMessage" endpoint="vm://wcc/PutIntegrationMessage"><cc:set name="is.message.severity" value="'INFO'"/><cc:set name="is.message.summary" value="'***** THE END OF THE REPORT*****'"/><cc:set name="is.document.variable.name" value="'vStoredReportMeta'"/><cc:set name="is.document.deliverable" value="'true'"/></cc:local-out>
+	</cc:assembly>
+
+</beans>
